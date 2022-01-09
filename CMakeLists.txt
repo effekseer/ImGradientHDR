@@ -41,9 +41,12 @@ add_dependencies(external_imgui
     external_glfw3
 )
 
-add_executable(test test/main.cpp)
+add_executable(test 
+    src/ImGradientHDR.cpp
+    test/main.cpp
+)
 
-target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${OPENGL_INCLUDE_DIR})
+target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${OPENGL_INCLUDE_DIR})
 target_link_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
 target_link_libraries(test PRIVATE glfw3 imgui ${OPENGL_LIBRARIES})

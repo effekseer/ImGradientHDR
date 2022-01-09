@@ -24,6 +24,8 @@ static void glfw_error_callback(int error, const char* description)
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
+#include <ImGradientHDR.h>
+
 int main(int, char**)
 {
 	// Setup window
@@ -95,6 +97,8 @@ int main(int, char**)
 	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+	ImGradientHDRState state;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -118,6 +122,8 @@ int main(int, char**)
 			static int counter = 0;
 
 			ImGui::Begin("Hello, world!");                          // Create a window called "Hello, world!" and append into it.
+
+			ImGradientHDR(state);
 
 			ImGui::Text("This is some useful text.");               // Display some text (you can use a format strings too)
 			ImGui::Checkbox("Another Window", &show_another_window);
