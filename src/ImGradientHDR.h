@@ -7,14 +7,25 @@ const int32_t MarkerMax = 8;
 
 struct ImGradientHDRState
 {
+	struct ColorMarker
+	{
+		float Position;
+		std::array<float, 3> Color;
+		float Intensity;
+	};
+
+	struct AlphaMarker
+	{
+		float Position;
+		float Alpha;
+	};
+
 	int ColorCount = 0;
 	int AlphaCount = 0;
-	std::array<std::array<float, 3>, MarkerMax> Colors;
-	std::array<float, MarkerMax> ColorPositions;
-	std::array<float, MarkerMax> ColorIntensities;
+	std::array<ColorMarker, MarkerMax> Colors;
+	std::array<AlphaMarker, MarkerMax> Alphas;
 
-	std::array<float, MarkerMax> Alphas;
-	std::array<float, MarkerMax> AlphaPositions;
+	bool AddColorMarker(float x, std::array<float, 3> color, float intensity);
 
 	std::array<float, 4> GetColor(float x) const;
 };

@@ -70,10 +70,10 @@ int main(int, char**)
 
 	ImGradientHDRState state;
 	state.ColorCount = 2;
-	state.ColorPositions[0] = 0.2f;
-	state.ColorPositions[1] = 0.4f;
-	state.Colors[0] = { 1.0f, 0.0f, 1.0f };
-	state.Colors[1] = { 0.0f, 1.0f, 0.0f };
+	state.Colors[0].Position = 0.2f;
+	state.Colors[1].Position = 0.4f;
+	state.Colors[0].Color = { 1.0f, 0.0f, 1.0f };
+	state.Colors[1].Color = { 0.0f, 1.0f, 0.0f };
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
