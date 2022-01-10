@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <vector>
 #include <algorithm>
+#include <string>
 
 bool ImGradientHDRState::AddColorMarker(float x, std::array<float, 3> color, float intencity)
 {
@@ -11,17 +12,19 @@ bool ImGradientHDRState::AddColorMarker(float x, std::array<float, 3> color, flo
 		return false;
 	}
 
+	const auto marker = ColorMarker{ x, color, intencity };
+
 	const auto lb = std::lower_bound(
 		Colors.begin(),
 		Colors.begin() + ColorCount,
-		ColorMarker{ x, color, intencity },
+		marker,
 		[&](const ColorMarker& a, const ColorMarker& b) -> bool { return a.Position < b.Position; });
 
 	if (lb != Colors.end())
 	{
 		const auto ind = lb - Colors.begin();
 		std::copy(Colors.begin() + ind, Colors.begin() + ColorCount, Colors.begin() + ind + 1);
-		*(Colors.begin() + ind) = ColorMarker{ x, color, intencity };
+		*(Colors.begin() + ind) = marker;
 		ColorCount++;
 	}
 
@@ -161,6 +164,8 @@ bool ImGradientHDR(ImGradientHDRState& state)
 		}
 	}
 
+	const auto barEndPos = ImGui::GetCursorScreenPos();
+
 	for (int i = 0; i < state.ColorCount; i++)
 	{
 		// TODO move marker
@@ -172,12 +177,23 @@ bool ImGradientHDR(ImGradientHDRState& state)
 			{ originPos.x + x - 10, originPos.y + height + 10 },
 			{ originPos.x + x + 10, originPos.y + height + 10 },
 			ImGui::ColorConvertFloat4ToU32({ c[0], c[1], c[2], 1.0f }));
+
+		ImGui::SetCursorScreenPos({ originPos.x + x - 5, originPos.y + height });
+		ImGui::InvisibleButton(("c" + std::to_string(i)).c_str(), { 10,10 });
+
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+		{
+			const auto diff = ImGui::GetIO().MouseDelta.x / width;
+			state.Colors[i].Position += diff;
+		}
 	}
 
 	for (int i = 0; i < state.AlphaCount; i++)
 	{
-		// TODO add marker
+		// TODO add draw marker
 	}
+
+	ImGui::SetCursorScreenPos(barEndPos);
 
 	return true;
 }
