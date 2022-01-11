@@ -100,7 +100,7 @@ std::array<float, 4> ImGradientHDRState::GetColor(float x) const
 	return std::array<float, 4>{c[0], c[1], c[2], getAlpha(x)};
 }
 
-bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state)
+bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, int& selectedIndex, int& draggingIndex)
 {
 	ImGui::PushID(gradientID);
 
@@ -171,19 +171,58 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state)
 	for (int i = 0; i < state.ColorCount; i++)
 	{
 		// TODO move marker
-		const auto x = state.Colors[i].Position * width;
+		const auto x = (int)(state.Colors[i].Position * width);
 		const auto c = state.Colors[i].Color;
 
-		drawList->AddTriangleFilled(
-			{ originPos.x + x, originPos.y + height },
-			{ originPos.x + x - 10, originPos.y + height + 10 },
-			{ originPos.x + x + 10, originPos.y + height + 10 },
-			ImGui::ColorConvertFloat4ToU32({ c[0], c[1], c[2], 1.0f }));
+		const auto drawMarker = [](const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, bool isSelected)
+		{
+			auto drawList = ImGui::GetWindowDrawList();
+			const auto w = pmax.x - pmin.x;
+			const auto h = pmax.y - pmin.y;
+			const auto margin = 2;
+			const auto outlineColor = isSelected ? ImGui::ColorConvertFloat4ToU32({ 0.0f, 0.0f, 1.0f, 1.0f }) : ImGui::ColorConvertFloat4ToU32({ 0.2f, 0.2f, 0.2f, 1.0f });
+
+			drawList->AddTriangleFilled(
+				{ pmin.x + w / 2, pmin.y },
+				{ pmin.x + 0, pmin.y + h / 2 },
+				{ pmin.x + w, pmin.y + h / 2 },
+				outlineColor);
+
+			drawList->AddRectFilled({ pmin.x + 0, pmin.y + h / 2 }, { pmin.x + w, pmin.y + h }, outlineColor);
+
+			drawList->AddTriangleFilled(
+				{ pmin.x + w / 2, pmin.y + margin },
+				{ pmin.x + 0 + margin, pmin.y + h / 2 },
+				{ pmin.x + w - margin, pmin.y + h / 2 },
+				color);
+
+			drawList->AddRectFilled({ pmin.x + 0 + margin, pmin.y + h / 2 }, { pmin.x + w - margin, pmin.y + h - margin }, color);
+
+		};
+
+		drawMarker(
+			{ originPos.x + x - 5, originPos.y + height },
+			{ originPos.x + x + 5, originPos.y + height + 20 },
+			ImGui::ColorConvertFloat4ToU32({ c[0], c[1], c[2], 1.0f }),
+			selectedIndex == i);
 
 		ImGui::SetCursorScreenPos({ originPos.x + x - 5, originPos.y + height });
-		ImGui::InvisibleButton(("c" + std::to_string(i)).c_str(), { 10,10 });
+		if (ImGui::InvisibleButton(("c" + std::to_string(i)).c_str(), { 10, 20 }))
+		{
+			selectedIndex = i;
+		}
 
-		if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+		if (draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+		{
+			draggingIndex = i;
+		}
+
+		if (!ImGui::IsMouseDown(0))
+		{
+			draggingIndex = -1;
+		}
+
+		if (draggingIndex == i && ImGui::IsMouseDragging(0))
 		{
 			const auto diff = ImGui::GetIO().MouseDelta.x / width;
 			state.Colors[i].Position += diff;

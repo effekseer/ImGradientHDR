@@ -32,4 +32,4 @@ struct ImGradientHDRState
 	std::array<float, 4> GetColor(float x) const;
 };
 
-bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state);
+bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, int& selectedIndex, int& draggingIndex);

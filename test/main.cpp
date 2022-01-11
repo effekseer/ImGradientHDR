@@ -77,6 +77,9 @@ int main(int, char**)
 	state.Colors[0].Color = { 1.0f, 0.0f, 1.0f };
 	state.Colors[1].Color = { 0.0f, 1.0f, 0.0f };
 
+	int selectedIndex = -1;
+	int draggingIndex = -1;
+
 	// Main loop
 	while (!glfwWindowShouldClose(window))
 	{
@@ -93,7 +96,7 @@ int main(int, char**)
 
 			ImGui::Begin("Hello, world!");
 
-			ImGradientHDR(stateID, state);
+			ImGradientHDR(stateID, state, selectedIndex, draggingIndex);
 
 			ImGui::Text("End");
 			ImGui::End();
