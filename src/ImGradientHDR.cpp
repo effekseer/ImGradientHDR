@@ -100,8 +100,10 @@ std::array<float, 4> ImGradientHDRState::GetColor(float x) const
 	return std::array<float, 4>{c[0], c[1], c[2], getAlpha(x)};
 }
 
-bool ImGradientHDR(ImGradientHDRState& state)
+bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state)
 {
+	ImGui::PushID(gradientID);
+
 	const auto originPos = ImGui::GetCursorScreenPos();
 
 	auto drawList = ImGui::GetWindowDrawList();
@@ -194,6 +196,8 @@ bool ImGradientHDR(ImGradientHDRState& state)
 	}
 
 	ImGui::SetCursorScreenPos(barEndPos);
+
+	ImGui::PopID();
 
 	return true;
 }

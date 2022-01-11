@@ -25,9 +25,11 @@ struct ImGradientHDRState
 	std::array<ColorMarker, MarkerMax> Colors;
 	std::array<AlphaMarker, MarkerMax> Alphas;
 
+
+
 	bool AddColorMarker(float x, std::array<float, 3> color, float intensity);
 
 	std::array<float, 4> GetColor(float x) const;
 };
 
-bool ImGradientHDR(ImGradientHDRState& state);
+bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state);
