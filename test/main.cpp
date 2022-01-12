@@ -71,14 +71,14 @@ int main(int, char**)
 	int32_t stateID = 10;
 
 	ImGradientHDRState state;
+	ImGradientHDRTemporaryState tempState;
+	/*
 	state.ColorCount = 2;
 	state.Colors[0].Position = 0.2f;
 	state.Colors[1].Position = 0.4f;
 	state.Colors[0].Color = { 1.0f, 0.0f, 1.0f };
 	state.Colors[1].Color = { 0.0f, 1.0f, 0.0f };
-
-	int selectedIndex = -1;
-	int draggingIndex = -1;
+	*/
 
 	// Main loop
 	while (!glfwWindowShouldClose(window))
@@ -96,9 +96,22 @@ int main(int, char**)
 
 			ImGui::Begin("Hello, world!");
 
-			ImGradientHDR(stateID, state, selectedIndex, draggingIndex);
+			ImGradientHDR(stateID, state, tempState);
 
 			ImGui::Text("End");
+
+			auto selectedColorMarker = state.GetColorMarker(tempState.colorSelectedIndex);
+			if (selectedColorMarker != nullptr)
+			{
+				ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float);
+			}
+
+			auto selectedAlphaMarker = state.GetAlphaMarker(tempState.alphaSelectedIndex);
+			if (selectedAlphaMarker != nullptr)
+			{
+				ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f, "%f", 1.0f);
+			}
+
 			ImGui::End();
 		}
 
