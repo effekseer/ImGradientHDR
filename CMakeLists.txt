@@ -41,15 +41,27 @@ add_dependencies(external_imgui
     external_glfw3
 )
 
-add_executable(test 
+add_library(ImGradientHDR
     src/ImGradientHDR.cpp
+)
+
+add_executable(test 
     test/main.cpp
 )
+
+target_include_directories(ImGradientHDR PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${OPENGL_INCLUDE_DIR})
 
 target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${OPENGL_INCLUDE_DIR})
 target_link_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
-target_link_libraries(test PRIVATE glfw3 imgui ${OPENGL_LIBRARIES})
+target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR ${OPENGL_LIBRARIES})
+
+
+if(MSVC)
+    target_compile_options(ImGradientHDR PRIVATE /W4 /WX /wd"4100")
+else()
+    target_compile_options(ImGradientHDR PRIVATE -Wall -Werror)
+endif()
 
 add_dependencies(test
     external_imgui

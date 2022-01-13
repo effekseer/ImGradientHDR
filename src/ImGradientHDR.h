@@ -37,12 +37,20 @@ struct ImGradientHDRState
 	std::array<float, 4> GetColor(float x) const;
 };
 
+enum class ImGradientHDRMarkerType
+{
+	Color,
+	Alpha,
+	Unknown,
+};
+
 struct ImGradientHDRTemporaryState
 {
-	int colorSelectedIndex = -1;
-	int colorDraggingIndex = -1;
-	int alphaSelectedIndex = -1;
-	int alphaDraggingIndex = -1;
+	ImGradientHDRMarkerType selectedMarkerType = ImGradientHDRMarkerType::Unknown;
+	int selectedIndex = -1;
+
+	ImGradientHDRMarkerType draggingMarkerType = ImGradientHDRMarkerType::Unknown;
+	int draggingIndex = -1;
 };
 
 bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState);

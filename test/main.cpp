@@ -2,39 +2,25 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-#include <GLES2/gl2.h>
-#endif
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
 
-#if defined(_MSC_VER) && (_MSC_VER >= 1900) && !defined(IMGUI_DISABLE_WIN32_FUNCTIONS)
-#pragma comment(lib, "legacy_stdio_definitions")
-#endif
+#include <GLFW/glfw3.h>
 
 static void glfw_error_callback(int error, const char* description)
 {
 	fprintf(stderr, "Glfw Error %d: %s\n", error, description);
 }
 
-#include <GLFW/glfw3.h>
-
 #include <ImGradientHDR.h>
 
 int main(int, char**)
 {
-	// Setup window
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
+	{
 		return 1;
+	}
 
-	// Decide GL+GLSL versions
-#if defined(IMGUI_IMPL_OPENGL_ES2)
-	// GL ES 2.0 + GLSL 100
-	const char* glsl_version = "#version 100";
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 	// GL 3.2 + GLSL 150
 	const char* glsl_version = "#version 150";
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -50,9 +36,11 @@ int main(int, char**)
 	//glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
-	GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(1280, 720, "ImGradientHDR", NULL, NULL);
 	if (window == NULL)
+	{
 		return 1;
+	}
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
@@ -65,51 +53,48 @@ int main(int, char**)
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init(glsl_version);
 
-	bool show_another_window = false;
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
 	int32_t stateID = 10;
 
 	ImGradientHDRState state;
 	ImGradientHDRTemporaryState tempState;
-	/*
-	state.ColorCount = 2;
-	state.Colors[0].Position = 0.2f;
-	state.Colors[1].Position = 0.4f;
-	state.Colors[0].Color = { 1.0f, 0.0f, 1.0f };
-	state.Colors[1].Color = { 0.0f, 1.0f, 0.0f };
-	*/
 
-	// Main loop
+	state.AddColorMarker(0.0f, { 1.0f,1.0f, 1.0f }, 1.0f);
+	state.AddColorMarker(1.0f, { 1.0f,1.0f, 1.0f }, 1.0f);
+	state.AddAlphaMarker(0.0f, 1.0f);
+	state.AddAlphaMarker(1.0f, 1.0f);
+
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
-
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
 		{
-			static float f = 0.0f;
-			static int counter = 0;
-
-			ImGui::Begin("Hello, world!");
+			ImGui::Begin("ImGradientHDR");
 
 			ImGradientHDR(stateID, state, tempState);
 
-			ImGui::Text("End");
-
-			auto selectedColorMarker = state.GetColorMarker(tempState.colorSelectedIndex);
-			if (selectedColorMarker != nullptr)
+			if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Color)
 			{
-				ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float);
+				auto selectedColorMarker = state.GetColorMarker(tempState.selectedIndex);
+				if (selectedColorMarker != nullptr)
+				{
+					ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float);
+					ImGui::DragFloat("Intencity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f, "%f", 1.0f);
+				}
 			}
 
-			auto selectedAlphaMarker = state.GetAlphaMarker(tempState.alphaSelectedIndex);
-			if (selectedAlphaMarker != nullptr)
+			if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Alpha)
 			{
-				ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f, "%f", 1.0f);
+				auto selectedAlphaMarker = state.GetAlphaMarker(tempState.selectedIndex);
+				if (selectedAlphaMarker != nullptr)
+				{
+					ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f, "%f", 1.0f);
+				}
 			}
 
 			ImGui::End();
@@ -126,7 +111,6 @@ int main(int, char**)
 		glfwSwapBuffers(window);
 	}
 
-	// Cleanup
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
