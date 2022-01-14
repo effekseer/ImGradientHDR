@@ -155,14 +155,12 @@ namespace
 					temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i);
 			}
 
-			if (ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), { markerWidth, markerHeight }))
-			{
-				temporaryState.selectedMarkerType = markerType;
-				temporaryState.selectedIndex = i;
-			}
+			ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), { markerWidth, markerHeight });
 
 			if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
 			{
+				temporaryState.selectedMarkerType = markerType;
+				temporaryState.selectedIndex = i;
 				temporaryState.draggingMarkerType = markerType;
 				temporaryState.draggingIndex = i;
 			}
@@ -234,73 +232,76 @@ bool ImGradientHDRState::AddAlphaMarker(float x, float alpha)
 	return true;
 }
 
-std::array<float, 4> ImGradientHDRState::GetColor(float x) const
+std::array<float, 4> ImGradientHDRState::GetCombinedColor(float x) const
 {
-	auto getColor = [&](float x)
+	const auto c = GetColorAndIntensity(x);
+	return std::array<float, 4>{c[0] * c[3], c[1] * c[3], c[2] * c[3], GetAlpha(x)};
+}
+
+std::array<float, 4> ImGradientHDRState::GetColorAndIntensity(float x) const
+{
+	if (ColorCount == 0)
 	{
-		if (ColorCount == 0)
-		{
-			return std::array<float, 3>{1.0f, 1.0f, 1.0f};
-		}
+		return std::array<float, 4>{1.0f, 1.0f, 1.0f, 1.0f};
+	}
 
-		if (x < Colors[0].Position)
-		{
-			return Colors[0].Color;
-		}
-
-		if (Colors[ColorCount - 1].Position <= x)
-		{
-			return Colors[ColorCount - 1].Color;
-		}
-
-		for (int i = 0; i < ColorCount - 1; i++)
-		{
-			if (Colors[i].Position <= x && x < Colors[i + 1].Position)
-			{
-				const auto area = Colors[i + 1].Position - Colors[i].Position;
-				const auto alpha = (x - Colors[i].Position) / area;
-				const auto r = Colors[i + 1].Color[0] * alpha + Colors[i].Color[0] * (1.0f - alpha);
-				const auto g = Colors[i + 1].Color[1] * alpha + Colors[i].Color[1] * (1.0f - alpha);
-				const auto b = Colors[i + 1].Color[2] * alpha + Colors[i].Color[2] * (1.0f - alpha);
-				return std::array<float, 3>{ r, g, b };
-			}
-		}
-
-		return std::array<float, 3>{1.0f, 1.0f, 1.0f};
-	};
-
-	auto getAlpha = [&](float x)
+	if (x < Colors[0].Position)
 	{
-		if (AlphaCount == 0)
-		{
-			return 1.0f;
-		}
+		const auto c = Colors[0].Color;
+		return { c[0], c[1] , c[2], Colors[0].Intensity };
+	}
 
-		if (x < Alphas[0].Position)
-		{
-			return Alphas[0].Alpha;
-		}
+	if (Colors[ColorCount - 1].Position <= x)
+	{
+		const auto c = Colors[ColorCount - 1].Color;
+		return { c[0], c[1] , c[2], Colors[ColorCount - 1].Intensity };
+	}
 
-		if (Alphas[AlphaCount - 1].Position <= x)
+	for (int i = 0; i < ColorCount - 1; i++)
+	{
+		if (Colors[i].Position <= x && x < Colors[i + 1].Position)
 		{
-			return Alphas[AlphaCount - 1].Alpha;
+			const auto area = Colors[i + 1].Position - Colors[i].Position;
+			const auto alpha = (x - Colors[i].Position) / area;
+			const auto r = Colors[i + 1].Color[0] * alpha + Colors[i].Color[0] * (1.0f - alpha);
+			const auto g = Colors[i + 1].Color[1] * alpha + Colors[i].Color[1] * (1.0f - alpha);
+			const auto b = Colors[i + 1].Color[2] * alpha + Colors[i].Color[2] * (1.0f - alpha);
+			const auto intensity = Colors[i + 1].Intensity * alpha + Colors[i].Intensity * (1.0f - alpha);
+			return std::array<float, 4>{ r, g, b, intensity };
 		}
+	}
 
-		for (int i = 0; i < AlphaCount - 1; i++)
-		{
-			if (Alphas[i].Position <= x && x < Alphas[i + 1].Position)
-			{
-				const auto area = Alphas[i + 1].Position - Alphas[i].Position;
-				const auto alpha = (x - Alphas[i].Position) / area;
-				return Alphas[i + 1].Alpha * alpha + Alphas[i].Alpha * (1.0f - alpha);
-			}
-		}
+	return std::array<float, 4>{1.0f, 1.0f, 1.0f, 1.0f};
+}
 
+float ImGradientHDRState::GetAlpha(float x) const
+{
+	if (AlphaCount == 0)
+	{
 		return 1.0f;
-	};
+	}
 
-	const auto c = getColor(x);
-	return std::array<float, 4>{c[0], c[1], c[2], getAlpha(x)};
+	if (x < Alphas[0].Position)
+	{
+		return Alphas[0].Alpha;
+	}
+
+	if (Alphas[AlphaCount - 1].Position <= x)
+	{
+		return Alphas[AlphaCount - 1].Alpha;
+	}
+
+	for (int i = 0; i < AlphaCount - 1; i++)
+	{
+		if (Alphas[i].Position <= x && x < Alphas[i + 1].Position)
+		{
+			const auto area = Alphas[i + 1].Position - Alphas[i].Position;
+			const auto alpha = (x - Alphas[i].Position) / area;
+			return Alphas[i + 1].Alpha * alpha + Alphas[i].Alpha * (1.0f - alpha);
+		}
+	}
+
+	return 1.0f;
 }
 
 bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState)
@@ -332,8 +333,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
 	{
 		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
-		const auto c = state.GetColor(x);
-		state.AddAlphaMarker(x, c[3]);
+		const auto alpha = state.GetAlpha(x);
+		state.AddAlphaMarker(x, alpha);
 	}
 
 	originPos = ImGui::GetCursorScreenPos();
@@ -389,8 +390,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 		for (size_t i = 0; i < xkeys.size() - 1; i++)
 		{
-			const auto c1 = state.GetColor(xkeys[i]);
-			const auto c2 = state.GetColor(xkeys[i + 1]);
+			const auto c1 = state.GetCombinedColor(xkeys[i]);
+			const auto c2 = state.GetCombinedColor(xkeys[i + 1]);
 
 			const auto colorAU32 = ImGui::ColorConvertFloat4ToU32({ c1[0], c1[1], c1[2], c1[3] });
 			const auto colorBU32 = ImGui::ColorConvertFloat4ToU32({ c2[0], c2[1], c2[2], c2[3] });
@@ -417,8 +418,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
 	{
 		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
-		const auto c = state.GetColor(x);
-		state.AddColorMarker(x, { c[0], c[1], c[2] }, 1.0f);
+		const auto c = state.GetColorAndIntensity(x);
+		state.AddColorMarker(x, { c[0], c[1], c[2] }, c[3]);
 	}
 
 	ImGui::PopID();

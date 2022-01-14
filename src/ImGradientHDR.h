@@ -34,7 +34,11 @@ struct ImGradientHDRState
 
 	bool AddAlphaMarker(float x, float alpha);
 
-	std::array<float, 4> GetColor(float x) const;
+	std::array<float, 4> GetCombinedColor(float x) const;
+
+	std::array<float, 4> GetColorAndIntensity(float x) const;
+
+	float GetAlpha(float x) const;
 };
 
 enum class ImGradientHDRMarkerType
