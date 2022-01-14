@@ -101,6 +101,86 @@ namespace
 			}
 		}
 	}
+
+	ImU32 GetMarkerColor(const ImGradientHDRState::ColorMarker& marker)
+	{
+		const auto c = marker.Color;
+		return ImGui::ColorConvertFloat4ToU32({ c[0], c[1], c[2], 1.0f });
+	}
+
+	ImU32 GetMarkerColor(const ImGradientHDRState::AlphaMarker& marker)
+	{
+		const auto c = marker.Alpha;
+		return ImGui::ColorConvertFloat4ToU32({ c, c, c, 1.0f });
+	}
+
+	enum class MarkerDirection
+	{
+		ToUpper,
+		ToLower,
+	};
+
+	template<typename T>
+	void UpdateMarker(
+		std::array<T, MarkerMax>& markerArray,
+		int& markerCount,
+		ImGradientHDRTemporaryState& temporaryState,
+		ImGradientHDRMarkerType markerType,
+		const char* keyStr,
+		ImVec2 originPos,
+		float width,
+		float markerWidth,
+		float markerHeight,
+		MarkerDirection markerDir)
+	{
+		for (int i = 0; i < markerCount; i++)
+		{
+			const auto x = (int)(markerArray[i].Position * width);
+			ImGui::SetCursorScreenPos({ originPos.x + x - 5, originPos.y });
+
+			if (markerDir == MarkerDirection::ToLower)
+			{
+				DrawMarker(
+					{ originPos.x + x - 5, originPos.y + markerHeight },
+					{ originPos.x + x + 5, originPos.y + 0 },
+					GetMarkerColor(markerArray[i]),
+					temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i);
+			}
+			else
+			{
+				DrawMarker(
+					{ originPos.x + x - 5, originPos.y + 0 },
+					{ originPos.x + x + 5, originPos.y + markerHeight },
+					GetMarkerColor(markerArray[i]),
+					temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i);
+			}
+
+			if (ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), { markerWidth, markerHeight }))
+			{
+				temporaryState.selectedMarkerType = markerType;
+				temporaryState.selectedIndex = i;
+			}
+
+			if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+			{
+				temporaryState.draggingMarkerType = markerType;
+				temporaryState.draggingIndex = i;
+			}
+
+			if (!ImGui::IsMouseDown(0))
+			{
+				temporaryState.draggingIndex = -1;
+				temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
+			}
+
+			if (temporaryState.draggingMarkerType == markerType && temporaryState.draggingIndex == i && ImGui::IsMouseDragging(0))
+			{
+				const auto diff = ImGui::GetIO().MouseDelta.x / width;
+				markerArray[i].Position += diff;
+				markerArray[i].Position = std::max(std::min(markerArray[i].Position, 1.0f), 0.0f);
+			}
+		}
+	}
 }
 
 ImGradientHDRState::ColorMarker* ImGradientHDRState::GetColorMarker(int32_t index)
@@ -238,43 +318,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	const auto markerWidth = 10;
 	const auto markerHeight = 15;
 
-	for (int i = 0; i < state.AlphaCount; i++)
-	{
-		const auto x = (int)(state.Alphas[i].Position * width);
-		const auto c = state.Alphas[i].Alpha;
-		ImGui::SetCursorScreenPos({ originPos.x + x - 5, originPos.y });
-
-		DrawMarker(
-			{ originPos.x + x - 5, originPos.y + markerHeight },
-			{ originPos.x + x + 5, originPos.y + 0 },
-			ImGui::ColorConvertFloat4ToU32({ c, c, c, 1.0f }),
-			temporaryState.selectedMarkerType == ImGradientHDRMarkerType::Alpha && temporaryState.selectedIndex == i);
-
-		if (ImGui::InvisibleButton(("a" + std::to_string(i)).c_str(), { markerWidth, markerHeight }))
-		{
-			temporaryState.selectedMarkerType = ImGradientHDRMarkerType::Alpha;
-			temporaryState.selectedIndex = i;
-		}
-
-		if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
-		{
-			temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Alpha;
-			temporaryState.draggingIndex = i;
-		}
-
-		if (!ImGui::IsMouseDown(0))
-		{
-			temporaryState.draggingIndex = -1;
-			temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
-		}
-
-		if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Alpha && temporaryState.draggingIndex == i && ImGui::IsMouseDragging(0))
-		{
-			const auto diff = ImGui::GetIO().MouseDelta.x / width;
-			state.Alphas[i].Position += diff;
-			state.Alphas[i].Position = std::max(std::min(state.Alphas[i].Position, 1.0f), 0.0f);
-		}
-	}
+	UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Alpha)
 	{
@@ -359,43 +403,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	originPos = ImGui::GetCursorScreenPos();
 
-	for (int i = 0; i < state.ColorCount; i++)
-	{
-		const auto x = (int)(state.Colors[i].Position * width);
-		const auto c = state.Colors[i].Color;
-
-		DrawMarker(
-			{ originPos.x + x - 5, originPos.y + 0 },
-			{ originPos.x + x + 5, originPos.y + markerHeight },
-			ImGui::ColorConvertFloat4ToU32({ c[0], c[1], c[2], 1.0f }),
-			temporaryState.selectedMarkerType == ImGradientHDRMarkerType::Color && temporaryState.selectedIndex == i);
-
-		ImGui::SetCursorScreenPos({ originPos.x + x - 5, originPos.y });
-		if (ImGui::InvisibleButton(("c" + std::to_string(i)).c_str(), { markerWidth, markerHeight }))
-		{
-			temporaryState.selectedMarkerType = ImGradientHDRMarkerType::Color;
-			temporaryState.selectedIndex = i;
-		}
-
-		if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
-		{
-			temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Color;
-			temporaryState.draggingIndex = i;
-		}
-
-		if (!ImGui::IsMouseDown(0))
-		{
-			temporaryState.draggingIndex = -1;
-			temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
-		}
-
-		if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Color && temporaryState.draggingIndex == i && ImGui::IsMouseDragging(0))
-		{
-			const auto diff = ImGui::GetIO().MouseDelta.x / width;
-			state.Colors[i].Position += diff;
-			state.Colors[i].Position = std::max(std::min(state.Colors[i].Position, 1.0f), 0.0f);
-		}
-	}
+	UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Color)
 	{
