@@ -1,7 +1,7 @@
 #pragma once
 
-#include <stdint.h>
 #include <array>
+#include <stdint.h>
 
 const int32_t MarkerMax = 8;
 
@@ -24,7 +24,6 @@ struct ImGradientHDRState
 	int AlphaCount = 0;
 	std::array<ColorMarker, MarkerMax> Colors;
 	std::array<AlphaMarker, MarkerMax> Alphas;
-
 
 	ColorMarker* GetColorMarker(int32_t index);
 
