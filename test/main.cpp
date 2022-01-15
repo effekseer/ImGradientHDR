@@ -97,6 +97,23 @@ int main(int, char**)
 				}
 			}
 
+			if (tempState.selectedMarkerType != ImGradientHDRMarkerType::Unknown)
+			{
+				if (ImGui::Button("Delete"))
+				{
+					if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Color)
+					{
+						state.RemoveColorMarker(tempState.selectedIndex);
+						tempState = ImGradientHDRTemporaryState{};
+					}
+					else if (tempState.selectedMarkerType == ImGradientHDRMarkerType::Alpha)
+					{
+						state.RemoveAlphaMarker(tempState.selectedIndex);
+						tempState = ImGradientHDRTemporaryState{};
+					}
+				}
+			}
+
 			ImGui::End();
 		}
 

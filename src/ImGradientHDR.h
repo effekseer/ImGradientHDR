@@ -34,6 +34,10 @@ struct ImGradientHDRState
 
 	bool AddAlphaMarker(float x, float alpha);
 
+	bool RemoveColorMarker(int32_t index);
+
+	bool RemoveAlphaMarker(int32_t index);
+
 	std::array<float, 4> GetCombinedColor(float x) const;
 
 	std::array<float, 4> GetColorAndIntensity(float x) const;

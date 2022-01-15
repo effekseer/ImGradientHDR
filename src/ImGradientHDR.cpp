@@ -232,6 +232,30 @@ bool ImGradientHDRState::AddAlphaMarker(float x, float alpha)
 	return true;
 }
 
+bool ImGradientHDRState::RemoveColorMarker(int32_t index)
+{
+	if (index >= ColorCount || index < 0)
+	{
+		return false;
+	}
+
+	std::copy(Colors.begin() + index + 1, Colors.end(), Colors.begin() + index);
+	ColorCount--;
+	return true;
+}
+
+bool ImGradientHDRState::RemoveAlphaMarker(int32_t index)
+{
+	if (index >= AlphaCount || index < 0)
+	{
+		return false;
+	}
+
+	std::copy(Alphas.begin() + index + 1, Alphas.end(), Alphas.begin() + index);
+	AlphaCount--;
+	return true;
+}
+
 std::array<float, 4> ImGradientHDRState::GetCombinedColor(float x) const
 {
 	const auto c = GetColorAndIntensity(x);
