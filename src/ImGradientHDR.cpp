@@ -203,7 +203,7 @@ ImGradientHDRState::AlphaMarker* ImGradientHDRState::GetAlphaMarker(int32_t inde
 	return &(Alphas[index]);
 }
 
-bool ImGradientHDRState::AddColorMarker(float x, std::array<float, 3> color, float intencity)
+bool ImGradientHDRState::AddColorMarker(float x, std::array<float, 3> color, float intensity)
 {
 	if (ColorCount >= MarkerMax)
 	{
@@ -212,7 +212,7 @@ bool ImGradientHDRState::AddColorMarker(float x, std::array<float, 3> color, flo
 
 	x = std::max(std::min(x, 1.0f), 0.0f);
 
-	const auto marker = ColorMarker{x, color, intencity};
+	const auto marker = ColorMarker{x, color, intensity};
 	AddMarker(Colors, ColorCount, marker);
 	return true;
 }

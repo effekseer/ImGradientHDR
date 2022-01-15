@@ -85,7 +85,7 @@ int main(int, char**)
 				if (selectedColorMarker != nullptr)
 				{
 					ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float);
-					ImGui::DragFloat("Intencity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f, "%f", 1.0f);
+					ImGui::DragFloat("Intensity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f, "%f", 1.0f);
 				}
 			}
 
