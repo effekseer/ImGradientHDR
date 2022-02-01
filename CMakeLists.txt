@@ -54,7 +54,7 @@ target_include_directories(ImGradientHDR PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/inc
 target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${OPENGL_INCLUDE_DIR})
 target_link_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
-target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR ${OPENGL_LIBRARIES})
+target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR ${OPENGL_LIBRARIES} ${CMAKE_DL_LIBS} pthread)
 
 
 if(MSVC)
