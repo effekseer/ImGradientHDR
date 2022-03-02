@@ -121,7 +121,7 @@ enum class MarkerDirection
 };
 
 template <typename T>
-void UpdateMarker(
+bool UpdateMarker(
 	std::array<T, MarkerMax>& markerArray,
 	int& markerCount,
 	ImGradientHDRTemporaryState& temporaryState,
@@ -133,6 +133,8 @@ void UpdateMarker(
 	float markerHeight,
 	MarkerDirection markerDir)
 {
+	bool changed = false;
+
 	for (int i = 0; i < markerCount; i++)
 	{
 		const auto x = (int)(markerArray[i].Position * width);
@@ -176,8 +178,12 @@ void UpdateMarker(
 			const auto diff = ImGui::GetIO().MouseDelta.x / width;
 			markerArray[i].Position += diff;
 			markerArray[i].Position = std::max(std::min(markerArray[i].Position, 1.0f), 0.0f);
+
+			changed |= diff != 0.0f;
 		}
 	}
+
+	return changed;
 }
 } // namespace
 
@@ -330,6 +336,8 @@ float ImGradientHDRState::GetAlpha(float x) const
 
 bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState)
 {
+	bool changed = false;
+
 	ImGui::PushID(gradientID);
 
 	auto originPos = ImGui::GetCursorScreenPos();
@@ -343,7 +351,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	const auto markerWidth = 10;
 	const auto markerHeight = 15;
 
-	UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
+	changed |= UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Alpha)
 	{
@@ -358,7 +366,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	{
 		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
 		const auto alpha = state.GetAlpha(x);
-		state.AddAlphaMarker(x, alpha);
+		changed |= state.AddAlphaMarker(x, alpha);
 	}
 
 	originPos = ImGui::GetCursorScreenPos();
@@ -431,7 +439,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	originPos = ImGui::GetCursorScreenPos();
 
-	UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
+	changed |= UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Color)
 	{
@@ -446,10 +454,10 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	{
 		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
 		const auto c = state.GetColorAndIntensity(x);
-		state.AddColorMarker(x, {c[0], c[1], c[2]}, c[3]);
+		changed |= state.AddColorMarker(x, {c[0], c[1], c[2]}, c[3]);
 	}
 
 	ImGui::PopID();
 
-	return true;
+	return changed;
 }
