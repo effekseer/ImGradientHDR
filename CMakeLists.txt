@@ -5,6 +5,7 @@ project(ImGradientHDR)
 include(ExternalProject)
 
 find_package(OpenGL REQUIRED)
+find_package(Threads REQUIRED)
 
 set(imgui_source_path ${CMAKE_CURRENT_BINARY_DIR}/external/imgui/src/external_imgui/)
 set(imgui_cmake_file_path ${imgui_source_path}/CMakeLists.txt)
@@ -54,11 +55,7 @@ target_include_directories(ImGradientHDR PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/inc
 target_include_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include ${CMAKE_CURRENT_SOURCE_DIR}/src ${OPENGL_INCLUDE_DIR})
 target_link_directories(test PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lib)
 
-if(MSVC)
-    target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR ${OPENGL_LIBRARIES})
-else()
-    target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR ${OPENGL_LIBRARIES} ${CMAKE_DL_LIBS} pthread)
-endif()
+target_link_libraries(test PRIVATE glfw3 imgui ImGradientHDR Threads::Threads ${OPENGL_LIBRARIES} ${CMAKE_DL_LIBS})
 
 if(MSVC)
     target_compile_options(ImGradientHDR PRIVATE /W4 /WX /wd"4100")
