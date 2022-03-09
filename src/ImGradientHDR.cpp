@@ -15,7 +15,8 @@ void AddMarker(std::array<T, MarkerMax>& a, int32_t& count, T value)
 		a.begin(),
 		a.begin() + count,
 		value,
-		[&](const T& a, const T& b) -> bool { return a.Position < b.Position; });
+		[&](const T& a, const T& b) -> bool
+		{ return a.Position < b.Position; });
 
 	if (lb != a.end())
 	{
@@ -70,7 +71,8 @@ void SortMarkers(std::array<T, MarkerMax>& a, int32_t& count, int32_t& selectedI
 		sortedMarker.emplace_back(SortedMarker{i, a[i]});
 	}
 
-	std::sort(sortedMarker.begin(), sortedMarker.end(), [](const SortedMarker& a, const SortedMarker& b) { return a.marker.Position < b.marker.Position; });
+	std::sort(sortedMarker.begin(), sortedMarker.end(), [](const SortedMarker& a, const SortedMarker& b)
+			  { return a.marker.Position < b.marker.Position; });
 
 	for (int32_t i = 0; i < count; i++)
 	{
@@ -290,7 +292,8 @@ std::array<float, 4> ImGradientHDRState::GetColorAndIntensity(float x) const
 	auto key = ColorMarker();
 	key.Position = x;
 
-	auto it = std::lower_bound(Colors.begin(), Colors.begin() + ColorCount, key, [](const ColorMarker& a, const ColorMarker& b) { return a.Position < b.Position; });
+	auto it = std::lower_bound(Colors.begin(), Colors.begin() + ColorCount, key, [](const ColorMarker& a, const ColorMarker& b)
+							   { return a.Position < b.Position; });
 	auto ind = static_cast<int32_t>(std::distance(Colors.begin(), it));
 
 	{
@@ -343,7 +346,8 @@ float ImGradientHDRState::GetAlpha(float x) const
 	auto key = AlphaMarker();
 	key.Position = x;
 
-	auto it = std::lower_bound(Alphas.begin(), Alphas.begin() + AlphaCount, key, [](const AlphaMarker& a, const AlphaMarker& b) { return a.Position < b.Position; });
+	auto it = std::lower_bound(Alphas.begin(), Alphas.begin() + AlphaCount, key, [](const AlphaMarker& a, const AlphaMarker& b)
+							   { return a.Position < b.Position; });
 	auto ind = static_cast<int32_t>(std::distance(Alphas.begin(), it));
 
 	{
@@ -398,7 +402,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::SetCursorScreenPos(originPos);
 
-	ImGui::InvisibleButton("AlphaArea", {width, markerHeight});
+	ImGui::InvisibleButton("AlphaArea", {width, static_cast<float>(markerHeight)});
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
 	{
@@ -409,7 +413,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	originPos = ImGui::GetCursorScreenPos();
 
-	ImGui::InvisibleButton("BarArea", {width, barHeight});
+	ImGui::InvisibleButton("BarArea", {width, static_cast<float>(barHeight)});
 
 	const int32_t gridSize = 10;
 
@@ -486,7 +490,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::SetCursorScreenPos(originPos);
 
-	ImGui::InvisibleButton("ColorArea", {width, markerHeight});
+	ImGui::InvisibleButton("ColorArea", {width, static_cast<float>(markerHeight)});
 
 	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
 	{
