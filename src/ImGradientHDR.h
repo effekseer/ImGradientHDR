@@ -60,4 +60,4 @@ struct ImGradientHDRTemporaryState
 	int draggingIndex = -1;
 };
 
-bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState);
+bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState, bool isMarkerShown = true);

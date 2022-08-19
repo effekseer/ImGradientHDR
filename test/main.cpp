@@ -77,7 +77,8 @@ int main(int, char**)
 		{
 			ImGui::Begin("ImGradientHDR");
 
-			ImGradientHDR(stateID, state, tempState);
+			bool isMarkerShown = true;
+			ImGradientHDR(stateID, state, tempState, isMarkerShown);
 
 			if (ImGui::IsItemHovered())
 			{
