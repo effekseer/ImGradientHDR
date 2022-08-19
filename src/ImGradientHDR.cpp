@@ -122,8 +122,14 @@ enum class MarkerDirection
 	ToLower,
 };
 
+struct UpdateMarkerResult
+{
+	bool isChanged;
+	bool isHovered;
+};
+
 template <typename T>
-bool UpdateMarker(
+UpdateMarkerResult UpdateMarker(
 	std::array<T, MarkerMax>& markerArray,
 	int& markerCount,
 	ImGradientHDRTemporaryState& temporaryState,
@@ -135,7 +141,9 @@ bool UpdateMarker(
 	float markerHeight,
 	MarkerDirection markerDir)
 {
-	bool changed = false;
+	UpdateMarkerResult ret;
+	ret.isChanged = false;
+	ret.isHovered = false;
 
 	for (int i = 0; i < markerCount; i++)
 	{
@@ -161,6 +169,8 @@ bool UpdateMarker(
 
 		ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), {markerWidth, markerHeight});
 
+		ret.isHovered |= ImGui::IsItemHovered();
+
 		if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
 		{
 			temporaryState.selectedMarkerType = markerType;
@@ -181,11 +191,11 @@ bool UpdateMarker(
 			markerArray[i].Position += diff;
 			markerArray[i].Position = std::max(std::min(markerArray[i].Position, 1.0f), 0.0f);
 
-			changed |= diff != 0.0f;
+			ret.isChanged |= diff != 0.0f;
 		}
 	}
 
-	return changed;
+	return ret;
 }
 } // namespace
 
@@ -393,7 +403,9 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	const auto markerWidth = 10;
 	const auto markerHeight = 15;
 
-	changed |= UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
+	const auto resultAlpha = UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
+
+	changed |= resultAlpha.isChanged;
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Alpha)
 	{
@@ -404,11 +416,25 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::InvisibleButton("AlphaArea", {width, static_cast<float>(markerHeight)});
 
-	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+	if (ImGui::IsItemHovered())
 	{
-		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
-		const auto alpha = state.GetAlpha(x);
-		changed |= state.AddAlphaMarker(x, alpha);
+		const float x = (ImGui::GetIO().MousePos.x - originPos.x);
+		const float xn = (ImGui::GetIO().MousePos.x - originPos.x) / width;
+		const auto c = state.GetAlpha(xn);
+
+		if (!resultAlpha.isHovered && state.AlphaCount < state.Alphas.size())
+		{
+			DrawMarker(
+				{originPos.x + x - 5, originPos.y + markerHeight},
+				{originPos.x + x + 5, originPos.y + 0},
+				ImGui::ColorConvertFloat4ToU32({c, c, c, 1.0f}),
+				false);
+		}
+
+		if (ImGui::IsMouseClicked(0))
+		{
+			changed |= state.AddAlphaMarker(xn, c);
+		}
 	}
 
 	originPos = ImGui::GetCursorScreenPos();
@@ -481,7 +507,9 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	originPos = ImGui::GetCursorScreenPos();
 
-	changed |= UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
+	const auto resultColor = UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
+
+	changed |= resultColor.isChanged;
 
 	if (temporaryState.draggingMarkerType == ImGradientHDRMarkerType::Color)
 	{
@@ -492,11 +520,25 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::InvisibleButton("ColorArea", {width, static_cast<float>(markerHeight)});
 
-	if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(0))
+	if (ImGui::IsItemHovered())
 	{
-		float x = (ImGui::GetIO().MousePos.x - originPos.x) / width;
-		const auto c = state.GetColorAndIntensity(x);
-		changed |= state.AddColorMarker(x, {c[0], c[1], c[2]}, c[3]);
+		const float x = (ImGui::GetIO().MousePos.x - originPos.x);
+		const float xn = x / width;
+		const auto c = state.GetColorAndIntensity(xn);
+
+		if (!resultColor.isHovered && state.ColorCount < state.Colors.size())
+		{
+			DrawMarker(
+				{originPos.x + x - 5, originPos.y + 0},
+				{originPos.x + x + 5, originPos.y + markerHeight},
+				ImGui::ColorConvertFloat4ToU32({c[0], c[1], c[2], 1.0f}),
+				false);
+		}
+
+		if (ImGui::IsMouseClicked(0))
+		{
+			changed |= state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]);
+		}
 	}
 
 	ImGui::PopID();
