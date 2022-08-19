@@ -463,7 +463,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	const auto barOriginPos = ImGui::GetCursorScreenPos();
 
-	ImGui::InvisibleButton("BarArea", {width, static_cast<float>(barHeight)});
+	ImGui::Dummy({width, static_cast<float>(barHeight)});
 
 	const int32_t gridSize = 10;
 
@@ -573,7 +573,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::SetCursorScreenPos(barOriginPos);
 
-	ImGui::InvisibleButton("BarAreaToHovered", {width, static_cast<float>(barHeight)});
+	ImGui::Dummy({width, static_cast<float>(barHeight)});
 
 	ImGui::SetCursorScreenPos(lastOriginPos);
 
