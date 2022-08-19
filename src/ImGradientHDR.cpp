@@ -27,24 +27,35 @@ void AddMarker(std::array<T, MarkerMax>& a, int32_t& count, T value)
 	}
 }
 
-void DrawMarker(const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, bool isSelected)
+enum class DrawMarkerMode
+{
+	Selected,
+	Unselected,
+	None,
+};
+
+void DrawMarker(const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, DrawMarkerMode mode)
 {
 	auto drawList = ImGui::GetWindowDrawList();
-	const auto w = pmax.x - pmin.x;
-	const auto h = pmax.y - pmin.y;
-	const auto sign = std::signbit(h) ? -1 : 1;
+	const auto w = static_cast<int32_t>(pmax.x - pmin.x);
+	const auto h = static_cast<int32_t>(pmax.y - pmin.y);
+	const auto sign = std::signbit(static_cast<float>(h)) ? -1 : 1;
 
 	const auto margin = 2;
 	const auto marginh = margin * sign;
-	const auto outlineColor = isSelected ? ImGui::ColorConvertFloat4ToU32({0.0f, 0.0f, 1.0f, 1.0f}) : ImGui::ColorConvertFloat4ToU32({0.2f, 0.2f, 0.2f, 1.0f});
 
-	drawList->AddTriangleFilled(
-		{pmin.x + w / 2, pmin.y},
-		{pmin.x + 0, pmin.y + h / 2},
-		{pmin.x + w, pmin.y + h / 2},
-		outlineColor);
+	if (mode != DrawMarkerMode::None)
+	{
+		const auto outlineColor = mode == DrawMarkerMode::Selected ? ImGui::ColorConvertFloat4ToU32({0.0f, 0.0f, 1.0f, 1.0f}) : ImGui::ColorConvertFloat4ToU32({0.2f, 0.2f, 0.2f, 1.0f});
 
-	drawList->AddRectFilled({pmin.x + 0, pmin.y + h / 2}, {pmin.x + w, pmin.y + h}, outlineColor);
+		drawList->AddTriangleFilled(
+			{pmin.x + w / 2, pmin.y},
+			{pmin.x + 0, pmin.y + h / 2},
+			{pmin.x + w, pmin.y + h / 2},
+			outlineColor);
+
+		drawList->AddRectFilled({pmin.x + 0, pmin.y + h / 2}, {pmin.x + w, pmin.y + h}, outlineColor);
+	}
 
 	drawList->AddTriangleFilled(
 		{pmin.x + w / 2, pmin.y + marginh},
@@ -52,7 +63,7 @@ void DrawMarker(const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, bool
 		{pmin.x + w - margin, pmin.y + h / 2},
 		color);
 
-	drawList->AddRectFilled({pmin.x + 0 + margin, pmin.y + h / 2 - sign}, {pmin.x + w - margin, pmin.y + h - marginh}, color);
+	drawList->AddRectFilled({pmin.x + 0 + margin, pmin.y + h / 2}, {pmin.x + w - margin, pmin.y + h - marginh}, color);
 };
 
 template <typename T>
@@ -150,13 +161,23 @@ UpdateMarkerResult UpdateMarker(
 		const auto x = (int)(markerArray[i].Position * width);
 		ImGui::SetCursorScreenPos({originPos.x + x - 5, originPos.y});
 
+		DrawMarkerMode mode;
+		if (temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i)
+		{
+			mode = DrawMarkerMode::Selected;
+		}
+		else
+		{
+			mode = DrawMarkerMode::Unselected;
+		}
+
 		if (markerDir == MarkerDirection::ToLower)
 		{
 			DrawMarker(
 				{originPos.x + x - 5, originPos.y + markerHeight},
 				{originPos.x + x + 5, originPos.y + 0},
 				GetMarkerColor(markerArray[i]),
-				temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i);
+				mode);
 		}
 		else
 		{
@@ -164,7 +185,7 @@ UpdateMarkerResult UpdateMarker(
 				{originPos.x + x - 5, originPos.y + 0},
 				{originPos.x + x + 5, originPos.y + markerHeight},
 				GetMarkerColor(markerArray[i]),
-				temporaryState.selectedMarkerType == markerType && temporaryState.selectedIndex == i);
+				mode);
 		}
 
 		ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), {markerWidth, markerHeight});
@@ -427,8 +448,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			DrawMarker(
 				{originPos.x + x - 5, originPos.y + markerHeight},
 				{originPos.x + x + 5, originPos.y + 0},
-				ImGui::ColorConvertFloat4ToU32({c, c, c, 1.0f}),
-				false);
+				ImGui::ColorConvertFloat4ToU32({c, c, c, 0.5f}),
+				DrawMarkerMode::None);
 		}
 
 		if (ImGui::IsMouseClicked(0))
@@ -437,14 +458,14 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 		}
 	}
 
-	originPos = ImGui::GetCursorScreenPos();
+	const auto barOriginPos = ImGui::GetCursorScreenPos();
 
 	ImGui::InvisibleButton("BarArea", {width, static_cast<float>(barHeight)});
 
 	const int32_t gridSize = 10;
 
-	drawList->AddRectFilled(ImVec2(originPos.x - 2, originPos.y - 2),
-							ImVec2(originPos.x + width + 2, originPos.y + barHeight + 2),
+	drawList->AddRectFilled(ImVec2(barOriginPos.x - 2, barOriginPos.y - 2),
+							ImVec2(barOriginPos.x + width + 2, barOriginPos.y + barHeight + 2),
 							IM_COL32(100, 100, 100, 255));
 
 	for (int y = 0; y * gridSize < barHeight; y += 1)
@@ -460,8 +481,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 				color = IM_COL32(50, 50, 50, 255);
 			}
 
-			drawList->AddRectFilled(ImVec2(originPos.x + x * gridSize, originPos.y + y * gridSize),
-									ImVec2(originPos.x + x * gridSize + wgrid, originPos.y + y * gridSize + hgrid),
+			drawList->AddRectFilled(ImVec2(barOriginPos.x + x * gridSize, barOriginPos.y + y * gridSize),
+									ImVec2(barOriginPos.x + x * gridSize + wgrid, barOriginPos.y + y * gridSize + hgrid),
 									color);
 		}
 	}
@@ -496,8 +517,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			const auto colorAU32 = ImGui::ColorConvertFloat4ToU32({c1[0], c1[1], c1[2], c1[3]});
 			const auto colorBU32 = ImGui::ColorConvertFloat4ToU32({c2[0], c2[1], c2[2], c2[3]});
 
-			drawList->AddRectFilledMultiColor(ImVec2(originPos.x + xkeys[i] * width, originPos.y),
-											  ImVec2(originPos.x + xkeys[i + 1] * width, originPos.y + barHeight),
+			drawList->AddRectFilledMultiColor(ImVec2(barOriginPos.x + xkeys[i] * width, barOriginPos.y),
+											  ImVec2(barOriginPos.x + xkeys[i + 1] * width, barOriginPos.y + barHeight),
 											  colorAU32,
 											  colorBU32,
 											  colorBU32,
@@ -531,8 +552,8 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			DrawMarker(
 				{originPos.x + x - 5, originPos.y + 0},
 				{originPos.x + x + 5, originPos.y + markerHeight},
-				ImGui::ColorConvertFloat4ToU32({c[0], c[1], c[2], 1.0f}),
-				false);
+				ImGui::ColorConvertFloat4ToU32({c[0], c[1], c[2], 0.5f}),
+				DrawMarkerMode::None);
 		}
 
 		if (ImGui::IsMouseClicked(0))
@@ -540,6 +561,14 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			changed |= state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]);
 		}
 	}
+
+	const auto lastOriginPos = ImGui::GetCursorScreenPos();
+
+	ImGui::SetCursorScreenPos(barOriginPos);
+
+	ImGui::InvisibleButton("BarAreaToHovered", {width, static_cast<float>(barHeight)});
+
+	ImGui::SetCursorScreenPos(lastOriginPos);
 
 	ImGui::PopID();
 
