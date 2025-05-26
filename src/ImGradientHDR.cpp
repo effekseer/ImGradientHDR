@@ -27,6 +27,12 @@ void AddMarker(std::array<T, MarkerMax>& a, int32_t& count, T value)
 	}
 }
 
+enum class MarkerDirection
+{
+	ToUpper,
+	ToLower,
+};
+
 enum class DrawMarkerMode
 {
 	Selected,
@@ -34,36 +40,43 @@ enum class DrawMarkerMode
 	None,
 };
 
-void DrawMarker(const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, DrawMarkerMode mode)
+void DrawMarker(const ImVec2& pmin, const ImVec2& pmax, const ImU32& color, MarkerDirection dir, DrawMarkerMode mode)
 {
-	auto drawList = ImGui::GetWindowDrawList();
+	const float center = pmin.x + (pmax.x - pmin.x) * 0.5f;
 	const auto w = static_cast<int32_t>(pmax.x - pmin.x);
 	const auto h = static_cast<int32_t>(pmax.y - pmin.y);
-	const auto sign = std::signbit(static_cast<float>(h)) ? -1 : 1;
-
-	const auto margin = 2;
-	const auto marginh = margin * sign;
+	
+	// Draw a marker shape with color and margin
+	auto drawShape = [=](ImGuiCol col, float mw, float mh)
+	{
+		auto drawList = ImGui::GetWindowDrawList();
+		if (dir == MarkerDirection::ToUpper)
+		{
+			drawList->PathLineTo({center, pmin.y + mh});
+			drawList->PathLineTo({pmax.x - mw, pmin.y + h * 0.5f});
+			drawList->PathLineTo({pmax.x - mw, pmax.y - mh});
+			drawList->PathLineTo({pmin.x + mw, pmax.y - mh});
+			drawList->PathLineTo({pmin.x + mw, pmin.y + h * 0.5f});
+			drawList->PathFillConvex(col);
+		}
+		else if (dir == MarkerDirection::ToLower)
+		{
+			drawList->PathLineTo({center, pmax.y - mh});
+			drawList->PathLineTo({pmin.x + mw, pmax.y - h * 0.5f});
+			drawList->PathLineTo({pmin.x + mw, pmin.y + mh});
+			drawList->PathLineTo({pmax.x - mw, pmin.y + mh});
+			drawList->PathLineTo({pmax.x - mw, pmax.y - h * 0.5f});
+			drawList->PathFillConvex(col);
+		}
+	};
 
 	if (mode != DrawMarkerMode::None)
 	{
 		const auto outlineColor = mode == DrawMarkerMode::Selected ? ImGui::ColorConvertFloat4ToU32({0.0f, 0.0f, 1.0f, 1.0f}) : ImGui::ColorConvertFloat4ToU32({0.2f, 0.2f, 0.2f, 1.0f});
-
-		drawList->AddTriangleFilled(
-			{pmin.x + w / 2, pmin.y},
-			{pmin.x + 0, pmin.y + h / 2},
-			{pmin.x + w, pmin.y + h / 2},
-			outlineColor);
-
-		drawList->AddRectFilled({pmin.x + 0, pmin.y + h / 2}, {pmin.x + w, pmin.y + h}, outlineColor);
+		drawShape(outlineColor, 0, 0);
 	}
 
-	drawList->AddTriangleFilled(
-		{pmin.x + w / 2, pmin.y + marginh},
-		{pmin.x + 0 + margin, pmin.y + h / 2},
-		{pmin.x + w - margin, pmin.y + h / 2},
-		color);
-
-	drawList->AddRectFilled({pmin.x + 0 + margin, pmin.y + h / 2}, {pmin.x + w - margin, pmin.y + h - marginh}, color);
+	drawShape(color, 2, 2);
 };
 
 template <typename T>
@@ -127,12 +140,6 @@ ImU32 GetMarkerColor(const ImGradientHDRState::AlphaMarker& marker)
 	return ImGui::ColorConvertFloat4ToU32({c, c, c, 1.0f});
 }
 
-enum class MarkerDirection
-{
-	ToUpper,
-	ToLower,
-};
-
 struct UpdateMarkerResult
 {
 	bool isChanged;
@@ -148,8 +155,7 @@ UpdateMarkerResult UpdateMarker(
 	const char* keyStr,
 	ImVec2 originPos,
 	float width,
-	float markerWidth,
-	float markerHeight,
+	ImVec2 markerSize,
 	MarkerDirection markerDir)
 {
 	UpdateMarkerResult ret;
@@ -171,24 +177,14 @@ UpdateMarkerResult UpdateMarker(
 			mode = DrawMarkerMode::Unselected;
 		}
 
-		if (markerDir == MarkerDirection::ToLower)
-		{
-			DrawMarker(
-				{originPos.x + x - 5, originPos.y + markerHeight},
-				{originPos.x + x + 5, originPos.y + 0},
-				GetMarkerColor(markerArray[i]),
-				mode);
-		}
-		else
-		{
-			DrawMarker(
-				{originPos.x + x - 5, originPos.y + 0},
-				{originPos.x + x + 5, originPos.y + markerHeight},
-				GetMarkerColor(markerArray[i]),
-				mode);
-		}
+		DrawMarker(
+			{originPos.x + x - markerSize.x * 0.5f, originPos.y},
+			{originPos.x + x + markerSize.x * 0.5f, originPos.y + markerSize.y},
+			GetMarkerColor(markerArray[i]),
+			markerDir,
+			mode);
 
-		ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), {markerWidth, markerHeight});
+		ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), markerSize);
 
 		ret.isHovered |= ImGui::IsItemHovered();
 
@@ -417,16 +413,17 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	auto drawList = ImGui::GetWindowDrawList();
 
-	const auto margin = 5;
+	const ImGuiStyle& style = ImGui::GetStyle();
+	const ImVec2 margin = style.FramePadding;
+	const float width = ImGui::GetContentRegionAvail().x;
+	const float barHeight = ImGui::GetFrameHeight();
+	const ImVec2 markerSize = ImVec2(ImGui::GetFontSize() * 0.6f, ImGui::GetFontSize() * 0.8f);
 
-	const auto width = ImGui::GetContentRegionAvail().x - margin * 2;
-	const auto barHeight = 20;
-	const auto markerWidth = 10;
-	const auto markerHeight = 15;
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, {0.0f, 0.0f});
 
 	if (isMarkerShown)
 	{
-		const auto resultAlpha = UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerWidth, markerHeight, MarkerDirection::ToLower);
+		const auto resultAlpha = UpdateMarker(state.Alphas, state.AlphaCount, temporaryState, ImGradientHDRMarkerType::Alpha, "a", originPos, width, markerSize, MarkerDirection::ToLower);
 
 		changed |= resultAlpha.isChanged;
 
@@ -437,7 +434,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 		ImGui::SetCursorScreenPos(originPos);
 
-		ImGui::InvisibleButton("AlphaArea", {width, static_cast<float>(markerHeight)});
+		ImGui::InvisibleButton("AlphaArea", {width, markerSize.y});
 
 		if (ImGui::IsItemHovered())
 		{
@@ -448,9 +445,10 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			if (!resultAlpha.isHovered && state.AlphaCount < state.Alphas.size())
 			{
 				DrawMarker(
-					{originPos.x + x - 5, originPos.y + markerHeight},
-					{originPos.x + x + 5, originPos.y + 0},
+					{originPos.x + x - markerSize.x * 0.5f, originPos.y},
+					{originPos.x + x + markerSize.y * 0.5f, originPos.y + markerSize.y},
 					ImGui::ColorConvertFloat4ToU32({c, c, c, 0.5f}),
+					MarkerDirection::ToLower,
 					DrawMarkerMode::None);
 			}
 
@@ -463,20 +461,20 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	const auto barOriginPos = ImGui::GetCursorScreenPos();
 
-	ImGui::Dummy({width, static_cast<float>(barHeight)});
+	ImGui::Dummy({width, barHeight});
 
-	const int32_t gridSize = 10;
+	const float gridSize = barHeight * 0.5f;
 
-	drawList->AddRectFilled(ImVec2(barOriginPos.x - 2, barOriginPos.y - 2),
-							ImVec2(barOriginPos.x + width + 2, barOriginPos.y + barHeight + 2),
+	drawList->AddRectFilled(ImVec2(barOriginPos.x + margin.x, barOriginPos.y + margin.y),
+							ImVec2(barOriginPos.x + width, barOriginPos.y + barHeight),
 							IM_COL32(100, 100, 100, 255));
 
 	for (int y = 0; y * gridSize < barHeight; y += 1)
 	{
 		for (int x = 0; x * gridSize < width; x += 1)
 		{
-			int wgrid = std::min(gridSize, static_cast<int>(width) - x * gridSize);
-			int hgrid = std::min(gridSize, barHeight - y * gridSize);
+			float wgrid = std::min(gridSize, width - x * gridSize);
+			float hgrid = std::min(gridSize, barHeight - y * gridSize);
 			ImU32 color = IM_COL32(100, 100, 100, 255);
 
 			if ((x + y) % 2 == 0)
@@ -534,7 +532,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 		originPos = ImGui::GetCursorScreenPos();
 
-		const auto resultColor = UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerWidth, markerHeight, MarkerDirection::ToUpper);
+		const auto resultColor = UpdateMarker(state.Colors, state.ColorCount, temporaryState, ImGradientHDRMarkerType::Color, "c", originPos, width, markerSize, MarkerDirection::ToUpper);
 
 		changed |= resultColor.isChanged;
 
@@ -545,7 +543,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 		ImGui::SetCursorScreenPos(originPos);
 
-		ImGui::InvisibleButton("ColorArea", {width, static_cast<float>(markerHeight)});
+		ImGui::InvisibleButton("ColorArea", {width, markerSize.y});
 
 		if (ImGui::IsItemHovered())
 		{
@@ -556,9 +554,10 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			if (!resultColor.isHovered && state.ColorCount < state.Colors.size())
 			{
 				DrawMarker(
-					{originPos.x + x - 5, originPos.y + 0},
-					{originPos.x + x + 5, originPos.y + markerHeight},
+					{originPos.x + x - markerSize.x * 0.5f, originPos.y},
+					{originPos.x + x + markerSize.x * 0.5f, originPos.y + markerSize.y},
 					ImGui::ColorConvertFloat4ToU32({c[0], c[1], c[2], 0.5f}),
+					MarkerDirection::ToUpper,
 					DrawMarkerMode::None);
 			}
 
@@ -573,9 +572,11 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 	ImGui::SetCursorScreenPos(barOriginPos);
 
-	ImGui::Dummy({width, static_cast<float>(barHeight)});
+	ImGui::Dummy({width, barHeight});
 
 	ImGui::SetCursorScreenPos(lastOriginPos);
+
+	ImGui::PopStyleVar();
 
 	ImGui::PopID();
 
