@@ -412,6 +412,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	bool changed = false;
 
 	ImGui::PushID(gradientID);
+	ImGui::BeginGroup();
 
 	auto originPos = ImGui::GetCursorScreenPos();
 
@@ -454,7 +455,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 					DrawMarkerMode::None);
 			}
 
-			if (ImGui::IsMouseClicked(0))
+			if (!resultAlpha.isHovered && ImGui::IsMouseClicked(0))
 			{
 				changed |= state.AddAlphaMarker(xn, c);
 			}
@@ -562,7 +563,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 					DrawMarkerMode::None);
 			}
 
-			if (ImGui::IsMouseClicked(0))
+			if (!resultColor.isHovered && ImGui::IsMouseClicked(0))
 			{
 				changed |= state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]);
 			}
@@ -576,7 +577,9 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	ImGui::Dummy({width, static_cast<float>(barHeight)});
 
 	ImGui::SetCursorScreenPos(lastOriginPos);
+	ImGui::Dummy({0.0f, 0.0f});
 
+	ImGui::EndGroup();
 	ImGui::PopID();
 
 	return changed;
