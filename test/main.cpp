@@ -2,6 +2,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include <stdio.h>
+#include <cstring>
 
 #include <GLFW/glfw3.h>
 
@@ -12,8 +13,9 @@ static void glfw_error_callback(int error, const char* description)
 
 #include <ImGradientHDR.h>
 
-int main(int, char**)
+int main(int argc, char** argv)
 {
+	const bool smokeTest = argc == 2 && std::strcmp(argv[1], "--smoke-test") == 0;
 	glfwSetErrorCallback(glfw_error_callback);
 	if (!glfwInit())
 	{
@@ -36,9 +38,14 @@ int main(int, char**)
 	// glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
 #endif
 
+	if (smokeTest)
+	{
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+	}
 	GLFWwindow* window = glfwCreateWindow(1280, 720, "ImGradientHDR", NULL, NULL);
 	if (window == NULL)
 	{
+		glfwTerminate();
 		return 1;
 	}
 	glfwMakeContextCurrent(window);
@@ -51,8 +58,25 @@ int main(int, char**)
 
 	ImGui::StyleColorsDark();
 
-	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init(glsl_version);
+	if (!ImGui_ImplGlfw_InitForOpenGL(window, true))
+	{
+		ImGui::DestroyContext();
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		return 1;
+	}
+	if (!ImGui_ImplOpenGL3_Init(glsl_version))
+	{
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+		glfwDestroyWindow(window);
+		glfwTerminate();
+		return 1;
+	}
+	if (smokeTest)
+	{
+		io.IniFilename = nullptr;
+	}
 
 	ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
@@ -66,7 +90,8 @@ int main(int, char**)
 	state.AddAlphaMarker(0.0f, 1.0f);
 	state.AddAlphaMarker(1.0f, 1.0f);
 
-	while (!glfwWindowShouldClose(window))
+	int renderedFrames = 0;
+	while (!glfwWindowShouldClose(window) && (!smokeTest || renderedFrames < 3))
 	{
 		glfwPollEvents();
 
@@ -91,7 +116,7 @@ int main(int, char**)
 				if (selectedColorMarker != nullptr)
 				{
 					ImGui::ColorEdit3("Color", selectedColorMarker->Color.data(), ImGuiColorEditFlags_Float);
-					ImGui::DragFloat("Intensity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f, "%f", 1.0f);
+					ImGui::DragFloat("Intensity", &selectedColorMarker->Intensity, 0.1f, 0.0f, 100.0f);
 				}
 			}
 
@@ -100,7 +125,7 @@ int main(int, char**)
 				auto selectedAlphaMarker = state.GetAlphaMarker(tempState.selectedIndex);
 				if (selectedAlphaMarker != nullptr)
 				{
-					ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f, "%f", 1.0f);
+					ImGui::DragFloat("Alpha", &selectedAlphaMarker->Alpha, 0.1f, 0.0f, 1.0f);
 				}
 			}
 
@@ -133,6 +158,7 @@ int main(int, char**)
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
 		glfwSwapBuffers(window);
+		++renderedFrames;
 	}
 
 	ImGui_ImplOpenGL3_Shutdown();

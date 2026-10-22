@@ -1,4 +1,6 @@
 # Prerequisites
+/build/
+/imgui.ini
 *.d
 
 # Compiled Object files
