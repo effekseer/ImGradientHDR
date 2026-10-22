@@ -5,6 +5,25 @@
 
 int main()
 {
+	ImGradientHDRState inserted{};
+	for (int i = MarkerMax - 1; i >= 0; --i)
+	{
+		const float x = static_cast<float>(i) / (MarkerMax - 1);
+		if (!inserted.AddColorMarker(x, {x, 0, 0}, 1) || !inserted.AddAlphaMarker(x, x))
+			return 1;
+	}
+	for (int i = 0; i < MarkerMax; ++i)
+	{
+		const float x = static_cast<float>(i) / (MarkerMax - 1);
+		if (inserted.Colors[i].Position != x || inserted.Colors[i].Color[0] != x || inserted.Alphas[i].Position != x || inserted.Alphas[i].Alpha != x)
+		{
+			std::fprintf(stderr, "Inserting keys overwrote existing keys.\n");
+			return 1;
+		}
+	}
+	if (inserted.AddColorMarker(0.5f, {1, 1, 1}, 1) || inserted.AddAlphaMarker(0.5f, 1))
+		return 1;
+
 	ImGradientHDRState state;
 	if (!state.AddColorMarker(1.0f, {0.0f, 0.0f, 1.0f}, 3.0f) ||
 		!state.AddColorMarker(0.0f, {1.0f, 0.0f, 0.0f}, 1.0f) ||

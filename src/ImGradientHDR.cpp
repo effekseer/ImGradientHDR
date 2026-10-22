@@ -21,7 +21,7 @@ void AddMarker(std::array<T, MarkerMax>& a, int32_t& count, T value)
 	if (lb != a.end())
 	{
 		const auto ind = lb - a.begin();
-		std::copy(a.begin() + ind, a.begin() + count, a.begin() + ind + 1);
+		std::copy_backward(a.begin() + ind, a.begin() + count, a.begin() + count + 1);
 		*(a.begin() + ind) = value;
 		count++;
 	}
@@ -278,7 +278,7 @@ bool ImGradientHDRState::RemoveColorMarker(int32_t index)
 		return false;
 	}
 
-	std::copy(Colors.begin() + index + 1, Colors.end(), Colors.begin() + index);
+	std::copy(Colors.begin() + index + 1, Colors.begin() + ColorCount, Colors.begin() + index);
 	ColorCount--;
 	return true;
 }
@@ -290,7 +290,7 @@ bool ImGradientHDRState::RemoveAlphaMarker(int32_t index)
 		return false;
 	}
 
-	std::copy(Alphas.begin() + index + 1, Alphas.end(), Alphas.begin() + index);
+	std::copy(Alphas.begin() + index + 1, Alphas.begin() + AlphaCount, Alphas.begin() + index);
 	AlphaCount--;
 	return true;
 }
@@ -446,7 +446,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			const float xn = (ImGui::GetIO().MousePos.x - originPos.x) / width;
 			const auto c = state.GetAlpha(xn);
 
-			if (!resultAlpha.isHovered && state.AlphaCount < state.Alphas.size())
+			if (!resultAlpha.isHovered && state.AlphaCount < MarkerMax)
 			{
 				DrawMarker(
 					{originPos.x + x - 5, originPos.y + markerHeight},
@@ -554,7 +554,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 			const float xn = x / width;
 			const auto c = state.GetColorAndIntensity(xn);
 
-			if (!resultColor.isHovered && state.ColorCount < state.Colors.size())
+			if (!resultColor.isHovered && state.ColorCount < MarkerMax)
 			{
 				DrawMarker(
 					{originPos.x + x - 5, originPos.y + 0},
