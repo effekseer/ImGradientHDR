@@ -535,45 +535,20 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 		}
 	}
 
+	// Evaluate before clamping to display colors; interpolating clamped HDR keys changes the gradient.
+	// HDRキーを先に表示色へ制限すると補間結果が変わるため、評価後に色を制限する。
+	for (float x = 0.0f; x < width; x += 1.0f)
 	{
-		std::vector<float> xkeys;
-		xkeys.reserve(16);
-
-		for (int32_t i = 0; i < state.ColorCount; i++)
-		{
-			xkeys.emplace_back(state.Colors[i].Position);
-		}
-
-		for (int32_t i = 0; i < state.AlphaCount; i++)
-		{
-			xkeys.emplace_back(state.Alphas[i].Position);
-		}
-
-		xkeys.emplace_back(0.0f);
-		xkeys.emplace_back(1.0f);
-
-		auto result = std::unique(xkeys.begin(), xkeys.end());
-		xkeys.erase(result, xkeys.end());
-
-		std::sort(xkeys.begin(), xkeys.end());
-
-		for (size_t i = 0; i < xkeys.size() - 1; i++)
-		{
-			const auto c1 = state.GetCombinedColor(xkeys[i]);
-			const auto c2 = state.GetCombinedColor(xkeys[i + 1]);
-
-			const auto colorAU32 = ImGui::ColorConvertFloat4ToU32({c1[0], c1[1], c1[2], c1[3]});
-			const auto colorBU32 = ImGui::ColorConvertFloat4ToU32({c2[0], c2[1], c2[2], c2[3]});
-
-			drawList->AddRectFilledMultiColor(ImVec2(barOriginPos.x + xkeys[i] * width, barOriginPos.y),
-											  ImVec2(barOriginPos.x + xkeys[i + 1] * width, barOriginPos.y + barHeight),
-											  colorAU32,
-											  colorBU32,
-											  colorBU32,
-											  colorAU32);
-		}
+		const auto nextX = std::min(x + 1.0f, width);
+		const auto c1 = state.GetCombinedColor(x / width);
+		const auto c2 = state.GetCombinedColor(nextX / width);
+		const auto colorA = ImGui::GetColorU32(ImVec4(c1[0], c1[1], c1[2], c1[3]));
+		const auto colorB = ImGui::GetColorU32(ImVec4(c2[0], c2[1], c2[2], c2[3]));
+		drawList->AddRectFilledMultiColor(
+			{barOriginPos.x + x, barOriginPos.y},
+			{barOriginPos.x + nextX, barOriginPos.y + barHeight},
+			colorA, colorB, colorB, colorA);
 	}
-
 	if (isMarkerShown)
 	{
 

@@ -134,11 +134,36 @@ bool Insertion(bool color)
 	return true;
 }
 
-bool Width()
+bool WidthAndHdr()
 {
 	Widget widget;
 	for (float width : {0.0f, 5.0f, 10.0f, 10.5f, 20.0f})
 		CHECK(!widget.Frame({-100, -100}, false, false, width).Changed);
+	widget.State = ImGradientHDRState{};
+	widget.State.AddColorMarker(0, {1, 0, 0}, 0);
+	widget.State.AddColorMarker(1, {1, 0, 0}, 2);
+	widget.Frame({-100, -100}, false);
+	const float center = widget.Origin.x + widget.Width * 0.5f;
+	const float barY = widget.Origin.y + 15.0f + ImGui::GetStyle().ItemSpacing.y;
+	bool found = false;
+	float displayedRed = 0.0f;
+	const auto* data = ImGui::GetDrawData();
+	for (int list = 0; list < data->CmdListsCount; ++list)
+	{
+		const auto& vertices = data->CmdLists[list]->VtxBuffer;
+		for (int i = 0; i + 3 < vertices.Size; ++i)
+		{
+			const auto& a = vertices[i];
+			const auto& b = vertices[i + 1];
+			if (a.pos.y != barY || b.pos.y != barY || !(a.pos.x <= center && center < b.pos.x))
+				continue;
+			const float t = (center - a.pos.x) / (b.pos.x - a.pos.x);
+			displayedRed = ImGui::ColorConvertU32ToFloat4(a.col).x * (1 - t) + ImGui::ColorConvertU32ToFloat4(b.col).x * t;
+			found = true;
+		}
+	}
+	CHECK(found);
+	CHECK(std::abs(displayedRed - widget.State.GetCombinedColor(0.5f)[0]) <= 1.0f / 255.0f);
 	return true;
 }
 
@@ -149,5 +174,5 @@ int main()
 		if (!Dragging(color) || !DisabledAndClamping(color) || !Insertion(color))
 			return 1;
 	}
-	return Width() ? 0 : 1;
+	return WidthAndHdr() ? 0 : 1;
 }

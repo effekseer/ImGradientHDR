@@ -33,6 +33,7 @@ ctest --output-on-failure
 ```
 
 Releaseを使う場合は上記のDebugをReleaseへ置き換えます。
+CTestはウィンドウを開かず、キー挿入・削除、HDR色・アルファの補間、ドラッグ・無効化・選択保持、編集通知、狭い領域、HDR描画色を確認します。
 サンプルに`--smoke-test`を指定すると、非表示ウィンドウで3フレーム描画して終了します。
 この確認にも利用可能なOpenGL環境が必要で、マウス操作や見た目の一致までは検証しません。
 通常起動では色・アルファのキーを追加・移動し、選択したキーの値や強度、削除を確認できます。
@@ -40,6 +41,7 @@ Releaseを使う場合は上記のDebugをReleaseへ置き換えます。
 | CMakeオプション | 単独ビルド時の既定値 | 用途 |
 |---|---|---|
 | `IMGRADIENTHDR_BUILD_EXAMPLE` | ON | GLFW／OpenGLサンプル |
+| `IMGRADIENTHDR_BUILD_TESTS` | ON | CTest用の状態・ウィジェットテスト |
 
 サンプルをOFFにするとOpenGL・GLFWは不要です。
 取得済みソースを使う場合は、FetchContent標準の`FETCHCONTENT_SOURCE_DIR_IMGUI`・`FETCHCONTENT_SOURCE_DIR_GLFW`へ絶対パスを指定できます。
@@ -50,6 +52,11 @@ Releaseを使う場合は上記のDebugをReleaseへ置き換えます。
 サンプルとテストは組み込み時には既定でOFFです。
 既存の`imgui`ターゲットがあれば再利用し、なければ固定版を取得します。
 既存ターゲットを使ってサンプルもビルドする場合は、Backendソースの場所を`imgui_SOURCE_DIR`で指定してください。
+
+`ImGradientHDR`は値が変わったときに`true`を返します。
+呼び出し直後の`ImGui::IsItemEdited()`と`ImGui::IsItemDeactivatedAfterEdit()`で、変更中と編集終了を取得できます。
+`BeginDisabled()`中は操作を停止します。キー追加時は既存の選択を保持します。
+HDRのプレビューは1ピクセル間隔で評価し、表示可能な色域へ制限します。HDR値そのものは変更しません。
 
 ---
 
@@ -84,6 +91,7 @@ ctest --output-on-failure
 ```
 
 Replace Debug with Release for release builds.
+CTest runs without a window and checks key insertion/removal, HDR color/alpha interpolation, dragging/disabling/selection preservation, edit notifications, narrow regions, and HDR display colors.
 Pass `--smoke-test` to the example to render three frames in a hidden window and exit.
 This still requires a working OpenGL environment and does not verify mouse interactions or visual equivalence.
 Run normally to add/move color and alpha keys, edit selected values/intensity, and delete keys.
@@ -91,6 +99,7 @@ Run normally to add/move color and alpha keys, edit selected values/intensity, a
 | CMake option | Standalone default | Purpose |
 |---|---|---|
 | `IMGRADIENTHDR_BUILD_EXAMPLE` | ON | GLFW/OpenGL example |
+| `IMGRADIENTHDR_BUILD_TESTS` | ON | State and widget tests through CTest |
 
 Disabling the example removes the OpenGL/GLFW requirement.
 To use existing source checkouts, set FetchContent's standard `FETCHCONTENT_SOURCE_DIR_IMGUI` and `FETCHCONTENT_SOURCE_DIR_GLFW` to absolute paths.
@@ -101,4 +110,9 @@ Use `add_subdirectory` and link to `ImGradientHDR::ImGradientHDR`.
 Examples and tests default to OFF when embedded.
 An existing `imgui` target is reused; otherwise the pinned version is fetched.
 To build the example with an existing target, set `imgui_SOURCE_DIR` to locate its backend sources.
+
+`ImGradientHDR` returns `true` when values change.
+Immediately afterward, use `ImGui::IsItemEdited()` and `ImGui::IsItemDeactivatedAfterEdit()` to track changes and edit completion.
+`BeginDisabled()` stops interaction. Adding a key preserves the existing selection.
+The HDR preview samples at one-pixel intervals and clamps to displayable colors without changing the stored HDR values.
 
