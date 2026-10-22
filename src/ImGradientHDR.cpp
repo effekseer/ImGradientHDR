@@ -28,6 +28,22 @@ void AddMarker(std::array<T, MarkerMax>& a, int32_t& count, T value)
 	}
 }
 
+template <typename T>
+void PreserveSelectionAfterInsert(const std::array<T, MarkerMax>& markers, int count, float position,
+	ImGradientHDRMarkerType type, ImGradientHDRTemporaryState& temporaryState)
+{
+	if (temporaryState.selectedMarkerType != type || temporaryState.selectedIndex < 0)
+	{
+		return;
+	}
+	const auto inserted = std::lower_bound(markers.begin(), markers.begin() + count, position,
+		[](const T& marker, float x) { return marker.Position < x; });
+	if (temporaryState.selectedIndex >= inserted - markers.begin())
+	{
+		++temporaryState.selectedIndex;
+	}
+}
+
 enum class DrawMarkerMode
 {
 	Selected,
@@ -479,7 +495,11 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 			if (!resultAlpha.isHovered && ImGui::IsMouseClicked(0))
 			{
-				changed |= state.AddAlphaMarker(xn, c);
+				if (state.AddAlphaMarker(xn, c))
+				{
+					PreserveSelectionAfterInsert(state.Alphas, state.AlphaCount, xn, ImGradientHDRMarkerType::Alpha, temporaryState);
+					changed = true;
+				}
 			}
 		}
 	}
@@ -587,7 +607,11 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 
 			if (!resultColor.isHovered && ImGui::IsMouseClicked(0))
 			{
-				changed |= state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]);
+				if (state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]))
+				{
+					PreserveSelectionAfterInsert(state.Colors, state.ColorCount, xn, ImGradientHDRMarkerType::Color, temporaryState);
+					changed = true;
+				}
 			}
 		}
 	}

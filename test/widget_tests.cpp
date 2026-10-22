@@ -117,6 +117,23 @@ bool DisabledAndClamping(bool color)
 	return true;
 }
 
+bool Insertion(bool color)
+{
+	Widget widget;
+	widget.State.AddColorMarker(0.5f, {0, 1, 0}, 1);
+	widget.State.AddAlphaMarker(0.5f, 0.5f);
+	widget.Temporary.selectedMarkerType = color ? ImGradientHDRMarkerType::Color : ImGradientHDRMarkerType::Alpha;
+	widget.Temporary.selectedIndex = 2;
+	const ImVec2 mouse{widget.Origin.x + widget.Width * 0.35f, widget.MarkerY(color)};
+	widget.Frame(mouse, false);
+	const auto added = widget.Frame(mouse, true);
+	CHECK(added.Changed);
+	CHECK(widget.Temporary.selectedIndex == 3);
+	CHECK((color ? widget.State.Colors[3].Position : widget.State.Alphas[3].Position) == 0.8f);
+	widget.Frame(mouse, false);
+	return true;
+}
+
 bool Width()
 {
 	Widget widget;
@@ -129,7 +146,7 @@ int main()
 {
 	for (bool color : {false, true})
 	{
-		if (!Dragging(color) || !DisabledAndClamping(color))
+		if (!Dragging(color) || !DisabledAndClamping(color) || !Insertion(color))
 			return 1;
 	}
 	return Width() ? 0 : 1;
