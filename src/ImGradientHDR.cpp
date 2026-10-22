@@ -1,8 +1,9 @@
-#include "ImGradientHDR.h"
+﻿#include "ImGradientHDR.h"
 
 #include <algorithm>
 #include <cmath>
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <string>
 #include <vector>
 
@@ -188,31 +189,42 @@ UpdateMarkerResult UpdateMarker(
 				mode);
 		}
 
-		ImGui::InvisibleButton((keyStr + std::to_string(i)).c_str(), {markerWidth, markerHeight});
+		// Swap IDs so sorting changes positions without transferring the active ID to another key.
+		// ソート後も別のキーへActive IDが移らないようにIDを交換する。
+		int buttonIndex = i;
+		if (temporaryState.draggingMarkerType == markerType && temporaryState.draggingButtonIndex >= 0)
+		{
+			if (i == temporaryState.draggingIndex)
+				buttonIndex = temporaryState.draggingButtonIndex;
+			else if (i == temporaryState.draggingButtonIndex)
+				buttonIndex = temporaryState.draggingIndex;
+		}
+		ImGui::InvisibleButton((keyStr + std::to_string(buttonIndex)).c_str(), {markerWidth, markerHeight});
+		if ((ImGui::GetItemFlags() & ImGuiItemFlags_Disabled) != 0 && ImGui::IsItemActive())
+		{
+			ImGui::ClearActiveID();
+		}
 
 		ret.isHovered |= ImGui::IsItemHovered();
 
-		if (temporaryState.draggingIndex == -1 && ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+		if (ImGui::IsItemActivated())
 		{
 			temporaryState.selectedMarkerType = markerType;
 			temporaryState.selectedIndex = i;
 			temporaryState.draggingMarkerType = markerType;
 			temporaryState.draggingIndex = i;
+			temporaryState.draggingButtonIndex = buttonIndex;
 		}
 
-		if (!ImGui::IsMouseDown(0))
-		{
-			temporaryState.draggingIndex = -1;
-			temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
-		}
-
-		if (temporaryState.draggingMarkerType == markerType && temporaryState.draggingIndex == i && ImGui::IsMouseDragging(0))
+		if (ImGui::IsItemActive() && temporaryState.draggingMarkerType == markerType && temporaryState.draggingIndex == i && ImGui::IsMouseDragging(0))
 		{
 			const auto diff = ImGui::GetIO().MouseDelta.x / width;
-			markerArray[i].Position += diff;
-			markerArray[i].Position = std::max(std::min(markerArray[i].Position, 1.0f), 0.0f);
-
-			ret.isChanged |= diff != 0.0f;
+			const auto position = std::max(std::min(markerArray[i].Position + diff, 1.0f), 0.0f);
+			if (position != markerArray[i].Position)
+			{
+				markerArray[i].Position = position;
+				ret.isChanged = true;
+			}
 		}
 	}
 
@@ -580,6 +592,12 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	ImGui::Dummy({0.0f, 0.0f});
 
 	ImGui::EndGroup();
+	if (!ImGui::IsItemActive() || !ImGui::IsMouseDown(0) || !isMarkerShown)
+	{
+		temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
+		temporaryState.draggingIndex = -1;
+		temporaryState.draggingButtonIndex = -1;
+	}
 	ImGui::PopID();
 
 	return changed;

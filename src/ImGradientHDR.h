@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <array>
 #include <stdint.h>
@@ -58,6 +58,10 @@ struct ImGradientHDRTemporaryState
 
 	ImGradientHDRMarkerType draggingMarkerType = ImGradientHDRMarkerType::Unknown;
 	int draggingIndex = -1;
+
+	// Keep the active button ID stable when dragging reorders the keys.
+	// ドラッグでキーの順序が変わっても操作中のボタンIDを維持する。
+	int draggingButtonIndex = -1;
 };
 
 bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRTemporaryState& temporaryState, bool isMarkerShown = true);
