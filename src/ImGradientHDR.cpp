@@ -240,6 +240,7 @@ UpdateMarkerResult UpdateMarker(
 			{
 				markerArray[i].Position = position;
 				ret.isChanged = true;
+				ImGui::MarkItemEdited(ImGui::GetItemID());
 			}
 		}
 	}
@@ -498,6 +499,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 				if (state.AddAlphaMarker(xn, c))
 				{
 					PreserveSelectionAfterInsert(state.Alphas, state.AlphaCount, xn, ImGradientHDRMarkerType::Alpha, temporaryState);
+					ImGui::MarkItemEdited(ImGui::GetItemID());
 					changed = true;
 				}
 			}
@@ -610,6 +612,7 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 				if (state.AddColorMarker(xn, {c[0], c[1], c[2]}, c[3]))
 				{
 					PreserveSelectionAfterInsert(state.Colors, state.ColorCount, xn, ImGradientHDRMarkerType::Color, temporaryState);
+					ImGui::MarkItemEdited(ImGui::GetItemID());
 					changed = true;
 				}
 			}

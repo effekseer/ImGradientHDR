@@ -81,13 +81,13 @@ bool Dragging(bool color)
 	const auto pressed = widget.Frame({x, y}, true);
 	CHECK(pressed.ActiveId != 0);
 	const auto moved = widget.Frame({x + widget.Width * 0.7f, y}, true);
-	CHECK(moved.Changed);
+	CHECK(moved.Changed && moved.Edited);
 	CHECK(widget.Temporary.draggingIndex == 1);
 	const auto crossing = widget.Frame({x + widget.Width * 0.72f, y}, true);
-	CHECK(crossing.Changed && crossing.ActiveId == pressed.ActiveId);
+	CHECK(crossing.Changed && crossing.Edited && crossing.ActiveId == pressed.ActiveId);
 	CHECK(widget.Temporary.selectedIndex == 1);
 	const auto released = widget.Frame({x + widget.Width * 0.72f, y}, false);
-	CHECK(!released.Changed);
+	CHECK(released.DeactivatedAfterEdit && !released.Changed);
 	CHECK(widget.Temporary.draggingIndex == -1);
 	CHECK(color ? widget.State.Colors[1].Color[0] == 1.0f : widget.State.Alphas[1].Alpha == 0.25f);
 	return true;
@@ -112,8 +112,8 @@ bool DisabledAndClamping(bool color)
 	widget.Frame({keyX, y}, true);
 	CHECK(widget.Frame({-100, y}, true).Changed);
 	const auto clamped = widget.Frame({-120, y}, true);
-	CHECK(!clamped.Changed);
-	widget.Frame({-120, y}, false);
+	CHECK(!clamped.Changed && !clamped.Edited);
+	CHECK(widget.Frame({-120, y}, false).DeactivatedAfterEdit);
 	return true;
 }
 
@@ -127,10 +127,10 @@ bool Insertion(bool color)
 	const ImVec2 mouse{widget.Origin.x + widget.Width * 0.35f, widget.MarkerY(color)};
 	widget.Frame(mouse, false);
 	const auto added = widget.Frame(mouse, true);
-	CHECK(added.Changed);
+	CHECK(added.Changed && added.Edited);
 	CHECK(widget.Temporary.selectedIndex == 3);
 	CHECK((color ? widget.State.Colors[3].Position : widget.State.Alphas[3].Position) == 0.8f);
-	widget.Frame(mouse, false);
+	CHECK(widget.Frame(mouse, false).DeactivatedAfterEdit);
 	return true;
 }
 
