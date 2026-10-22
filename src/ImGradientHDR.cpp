@@ -436,6 +436,16 @@ bool ImGradientHDR(int32_t gradientID, ImGradientHDRState& state, ImGradientHDRT
 	const auto barHeight = 20;
 	const auto markerWidth = 10;
 	const auto markerHeight = 15;
+	if (width <= 0.0f)
+	{
+		ImGui::Dummy({0.0f, static_cast<float>(barHeight)});
+		ImGui::EndGroup();
+		ImGui::PopID();
+		temporaryState.draggingMarkerType = ImGradientHDRMarkerType::Unknown;
+		temporaryState.draggingIndex = -1;
+		temporaryState.draggingButtonIndex = -1;
+		return false;
+	}
 
 	if (isMarkerShown)
 	{

@@ -117,6 +117,14 @@ bool DisabledAndClamping(bool color)
 	return true;
 }
 
+bool Width()
+{
+	Widget widget;
+	for (float width : {0.0f, 5.0f, 10.0f, 10.5f, 20.0f})
+		CHECK(!widget.Frame({-100, -100}, false, false, width).Changed);
+	return true;
+}
+
 int main()
 {
 	for (bool color : {false, true})
@@ -124,5 +132,5 @@ int main()
 		if (!Dragging(color) || !DisabledAndClamping(color))
 			return 1;
 	}
-	return 0;
+	return Width() ? 0 : 1;
 }
